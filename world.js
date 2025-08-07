@@ -128,6 +128,16 @@ class World {
         return this.worldToScreenTransform.inverse().compose(screenTransform);
     }
 
+    /** Get current visible area in world coordinates */
+    getVisibleWorldPolygon() {
+        return this.getVisibleWorldArea().toPolygon();
+    }
+
+    /** Get current visible area in world coordinates */
+    getShrinkedVisibleWorldPolygon(margin) {
+        return this.getShrinkedVisibleWorldArea(margin).toPolygon();
+    }
+
     /** Get axis-aligned bounding box of visible world area */
     getVisibleWorldBounds() {
         return this.getVisibleWorldArea().boundingRectangle();

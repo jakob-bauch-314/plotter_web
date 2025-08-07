@@ -325,58 +325,18 @@ class AffineTransformation {
             Math.max(...ys)
         );
     }
+
+    toPolygon(){
+        const basisVector1 = this.matrix.firstColumnVector();
+        const basisVector2 = this.matrix.secondColumnVector();
+        return new Polygon([
+            this.vector,
+            this.vector.add(basisVector1),
+            this.vector.add(basisVector1).add(basisVector2),
+            this.vector.add(basisVector2)
+        ]);
+    }
 }
-/*
-class Rectangle {
-
-    constructor(x1, y1, x2, y2) {
-        this.x1 = Math.min(x1, x2);
-        this.y1 = Math.min(y1, y2);
-        this.x2 = Math.max(x1, x2);
-        this.y2 = Math.max(y1, y2);
-    }
-
-    width() { return this.x2 - this.x1 }
-    
-
-    height() { return this.y2 - this.y1 }
-
-
-    scale(scalar) {
-        return new Rectangle(
-            scalar * this.x1, 
-            scalar * this.y1, 
-            scalar * this.x2, 
-            scalar * this.y2
-        );
-    }
-
-
-    outer() {
-        return new Rectangle(
-            Math.floor(this.x1), 
-            Math.floor(this.y1), 
-            Math.ceil(this.x2), 
-            Math.ceil(this.y2)
-        );
-    }
-
-    toParallelogram(){
-        return new Parallelogram(new Vec2(this.x1, this.y1), new Vec2(this.x1, this.y2), new Vec2(this.x2, this.y1));
-    }
-
-    toAffineTransform(){
-        return new AffineTransformation(new Matrix2(this.x2-this.x1, 0, 0, this.y2-this.y1), new Vec2(this.x1, this.y1));
-    }
-
-
-    clip(point){
-        return new Vec2(clip(point.x, this.x1, this.x2), clip(point.y, this.y1, this.y2))
-    }
-
-    static unit_rectangle = new Rectangle(0, 0, 1, 1);
-}
-*/
 
 /**
  * Axis-aligned rectangle representation
@@ -523,5 +483,54 @@ class Rectangle {
      */
     static unitRectangle() {
         return new Rectangle(0, 0, 1, 1);
+    }
+}
+
+class Line {
+    constructor(origin, direction){
+        this.origin = origin;
+        this.direction = direction;
+    }
+    intersectLine(line){
+        const scalars = Matrix2.fromColumns(this.direction, line.direction).inverse().apply(line.origin.add(this.origin.negative()));
+        return this.origin.add(this.direction.scale(scalars.x));
+    }
+}
+
+class LineSegment {
+    constructor(start, end){
+        this.start = start;
+        this.end = end;
+    }
+    intersectLine(line){
+        const direction = this.end.add(this.start.negative());
+        try {
+            const scalar = Matrix2.fromColumns(direction, line.direction).inverse().apply(line.origin.add(this.start.negative())).x;
+            const intersections = ((0 <= scalar) & (scalar < 1)) ? [this.start.add(direction.scale(scalar))] : [];
+            return intersections;
+        } catch {
+            return [];
+        }
+    }
+}
+
+class Polygon {
+    constructor(points){
+        this.points = points;
+    }
+    intersectLine(line){
+        var scalar_array = [];
+        for (var i = 0; i < this.points.length; i++){
+            const start = this.points[i % this.points.length];
+            const end = this.points[(i+1) % this.points.length]
+            const direction = end.add(start.negative());
+            const basis_change_matrix = Matrix2.fromColumns(line.direction, direction.negative());
+            if (basis_change_matrix.determinant() == 0) continue;
+            const scalars = (basis_change_matrix.inverse().apply(start.add(line.origin.negative())));
+            console.log(scalars);
+            if ((scalars.y < 0) | (scalars.y >= 1)) continue;
+            scalar_array.push(scalars.x);
+        }
+        return scalar_array.sort().map(scalar => line.origin.add(line.direction.scale(scalar)))
     }
 }

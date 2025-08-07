@@ -14,21 +14,6 @@ $(function() {
         .on('mousemove', worldInstance.handleMouseMove)
         .on('wheel', worldInstance.handleMouseScroll);
     
-    // Shape creation UI
-    /*
-    $('#new_item_select').on('change', function() {
-        if (this.selectedIndex === 1) {
-            worldInstance.shapes.push(
-                new FunctionGraph(
-                    `graph_${worldInstance.shapes.length}`, 
-                    worldInstance, 
-                    {function: "sin(x)"}
-                )
-            );
-        }
-        this.selectedIndex = 0;
-    });
-    */
     $('#new-graph').on('click', function() {FunctionGraph.new(worldInstance)})
     $('#new-grid').on('click', function() {InfiniteGrid.new(worldInstance)})
     $('#new-axes').on('click', function() {

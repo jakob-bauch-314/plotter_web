@@ -216,74 +216,19 @@ class Axes extends Shape{
     constructor(world, general_attrs, specific_attrs) {
         super(world, general_attrs, specific_attrs);
     }
-    draw() {
+
+    draw(){
         const screen_parallelogram = this.world.getShrinkedVisibleWorldArea(30);
-        const small_screen_parallelogram = this.world.getShrinkedVisibleWorldArea(30.0001);
+        const screen_polygon = screen_parallelogram.toPolygon();
+        const small_screen_parallelogram = this.world.getShrinkedVisibleWorldArea(30.01);
+        const small_screen_polygon = screen_parallelogram.toPolygon();
         const axesGroup = document.createElementNS(this.world.svgNS, "g");
-        const center = small_screen_parallelogram.clip(new Vec2(0, 0));
+        const origin = small_screen_parallelogram.clip(new Vec2(0, 0));
 
-        const basisVector1 = screen_parallelogram.matrix.firstColumnVector();
-        const basisVector2 = screen_parallelogram.matrix.secondColumnVector();
-        const cornerA = screen_parallelogram.vector;
-        const cornerB = cornerA.add(basisVector1);
-        const cornerC = cornerA.add(basisVector2);
-        const cornerD = cornerA.add(basisVector1).add(basisVector2);
-        const ex = Vec2.EX();
-        const ey = Vec2.EY();
+        // x axis
 
-        // x-axis
-
-        const x_scalars = [];
-
-        try {x_scalars.push(Matrix2.fromColumns(ex, basisVector1).inverse().apply(cornerA.add(center.negative())).x)} catch {};
-        try {x_scalars.push(Matrix2.fromColumns(ex, basisVector2).inverse().apply(cornerB.add(center.negative())).x)} catch {};
-        try {x_scalars.push(Matrix2.fromColumns(ex, basisVector2).inverse().apply(cornerC.add(center.negative())).x)} catch {};
-        try {x_scalars.push(Matrix2.fromColumns(ex, basisVector1).inverse().apply(cornerD.add(center.negative())).x)} catch {};
-
-        var x_start_scalar = -Infinity;
-        var x_end_scalar = Infinity;
-
-        for (const x_scalar of x_scalars){
-            if (x_scalar < 0 & x_scalar > x_start_scalar){x_start_scalar = x_scalar}
-            if (x_scalar > 0 & x_scalar < x_end_scalar){x_end_scalar = x_scalar}
-        }
-
-        x_start_scalar = (x_start_scalar == -Infinity) ? 0 : x_start_scalar;
-        x_end_scalar = (x_end_scalar == Infinity) ? 0 : x_end_scalar;
-
-        const x_axis_start = center.add(ex.scale(x_start_scalar));
-        const x_axis_end = center.add(ex.scale(x_end_scalar));
-
-        const x_axis = this.createArrow(
-            this.world.worldToScreen(x_axis_start),
-            this.world.worldToScreen(x_axis_end));
-
-        // y-axis
-
-        const y_scalars = [];
-
-        try {y_scalars.push(Matrix2.fromColumns(ey, basisVector1).inverse().apply(cornerA.add(center.negative())).x)} catch {};
-        try {y_scalars.push(Matrix2.fromColumns(ey, basisVector2).inverse().apply(cornerB.add(center.negative())).x)} catch {};
-        try {y_scalars.push(Matrix2.fromColumns(ey, basisVector2).inverse().apply(cornerC.add(center.negative())).x)} catch {};
-        try {y_scalars.push(Matrix2.fromColumns(ey, basisVector1).inverse().apply(cornerD.add(center.negative())).x)} catch {};
-
-        var y_start_scalar = -Infinity;
-        var y_end_scalar = Infinity;
-
-        for (const y_scalar of y_scalars){
-            if (y_scalar < 0 & y_scalar > y_start_scalar){y_start_scalar = y_scalar}
-            if (y_scalar > 0 & y_scalar < y_end_scalar){y_end_scalar = y_scalar}
-        }
-
-        y_start_scalar = (y_start_scalar == -Infinity) ? 0 : y_start_scalar;
-        y_end_scalar = (y_end_scalar == Infinity) ? 0 : y_end_scalar;
-
-        const y_axis_start = center.add(ey.scale(y_start_scalar));
-        const y_axis_end = center.add(ey.scale(y_end_scalar));
-
-        const y_axis = this.createArrow(
-            this.world.worldToScreen(y_axis_start),
-            this.world.worldToScreen(y_axis_end));
+        const x_axis = this.Axis(origin, Vec2.EX(), screen_polygon);
+        const y_axis = this.Axis(origin, Vec2.EY(), screen_polygon);
 
         // rest
 
@@ -291,6 +236,19 @@ class Axes extends Shape{
         axesGroup.appendChild(x_axis);
         axesGroup.appendChild(y_axis);
         return axesGroup;
+    }
+
+    Axis(origin, direction, area){
+        const axis_line = new Line(origin, direction);
+        const axis_intersections = area.intersectLine(axis_line);
+        const axis_start = axis_intersections[0];
+        const axis_end = axis_intersections[1];
+
+        const axis = this.createArrow(
+            this.world.worldToScreen(axis_start),
+            this.world.worldToScreen(axis_end));
+        
+        return axis;
     }
 
     createArrow(start, end){
