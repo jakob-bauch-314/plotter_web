@@ -1,0 +1,148 @@
+/* ===== ROOT VARIABLES ===== */
+:root {
+    /* Blue color palette with opacity levels */
+    --color-blue-light: rgba(65, 80, 109, 0.726);
+    --color-blue-dark: rgba(25, 30, 41, 0.384);
+
+    --color-red-medium: rgb(255,0,0);
+    --color-red-dark: rgb(97, 0, 0);
+
+    --color-beige-light: rgb(216, 211, 136);
+    --color-beige-dark: rgb(133, 127, 56);
+
+    --color-transparent: rgba(0,0,0,0);
+}
+
+/* ===== BASE STYLES ===== */
+body {
+    margin: 0;
+    background-color: black;
+    color: white;
+    font-family: sans-serif;
+}
+
+/* ===== CANVAS STYLES ===== */
+#visualization-canvas {
+    width: 100vw;
+    height: 100vh;
+    display: block;
+}
+
+/* ===== CONTROL PANEL ===== */
+#control-panel {
+    position: absolute;
+    display: inline-block;
+    width: 500px;
+    top: 50px;
+    left: 50px;
+    z-index: 1;
+    padding: 5px;
+    margin: 5px;
+    border-radius: 15px;
+    background-color: var(--color-blue-dark);
+    box-shadow: var(--color-blue-light) 0px 0px 5px 5px inset;
+}
+
+/* ===== UI MODULES ===== */
+.ui-module {
+    display: block;
+    height: auto;
+    z-index: 20;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 15px;
+    background-color: var(--color-blue-dark);
+    box-shadow: var(--color-blue-light) 0px 0px 5px 5px inset;
+}
+
+/* Attribute sections */
+.attributes-section {
+    display: inline-block;
+    width: 50%;
+    height: auto;
+    vertical-align: top;
+}
+
+/* ===== ATTRIBUTE ROWS ===== */
+.attribute-row {
+    display: flex;
+    width: 100%;
+    height: 30px;
+    align-items: center;
+}
+
+.attribute-label {
+    display: inline-block;
+    width: 25%;
+    height: 100%;
+    line-height: 30px;
+    margin: 5px;
+}
+
+.attribute-value-container{
+    display: inline-block;
+    margin: 5px;
+    width: 75%;
+    height: 70%;
+}
+
+.attribute-value {
+    margin: 0px;
+}
+
+.attribute-value:hover{
+    box-shadow: var(--color-beige-dark) 0px 0px 2px 2px outset;
+}
+
+.attribute-value[type="text"] {
+    background-color: rgba(5, 0, 22, 0.938);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 90%
+}
+
+.attribute-value[type="checkbox"] {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: var(--color-beige-light);
+    box-shadow: var(--color-beige-dark) 0px 0px 2px 2px inset;
+}
+
+.attribute-value[type="checkbox"]:checked {
+    background-color: var(--color-beige-dark);
+    box-shadow: var(--color-beige-light) 0px 0px 2px 2px inset;
+}
+
+.attribute-value[type="button"] {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: var(--color-red-medium);
+    box-shadow: var(--color-red-dark) 0px 0px 2px 2px inset;
+    cursor: pointer;
+}
+
+/* ===== ACTION BUTTONS ===== */
+.primary-button {
+    width: 60px;
+    height: 30px;
+    border: none;
+    border-radius: 4px;
+    background-color:rgb(0, 196, 0);
+    box-shadow: green 0px 0px 5px 5px inset;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+/*
+.primary-button:hover {
+    box-shadow: 0px 0px 10px var(--color-blue-deep-dark);
+}
+    */
