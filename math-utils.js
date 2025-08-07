@@ -26,3 +26,25 @@ function determineGridLineRank(n) {
     if (n === 0) return 3;  // Special rank for origin
     return countTrailingZeros(n, 2);
 }
+
+
+function differential(f){
+    const d = 0.00001;
+    return function(x) {
+        return (f(x+d)-f(x))/d
+    }
+}
+
+function root(f){
+    var x = 0;
+    for (let _ = 0; _ < 10; _++){
+        var y = f(x);
+        var m = differential(f)(x);
+        x = x - y/m;
+    }
+    return x;
+}
+
+function inverse(f){
+    return function(y){return root(x => f(x) - y)}
+}

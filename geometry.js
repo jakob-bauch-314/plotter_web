@@ -291,51 +291,6 @@ class AffineTransformation {
             this.matrix.apply(other.vector).add(this.vector)
         );
     }
-    
-    /** 
-     * Clip point to unit rectangle in transformed space
-     * @param {Vec2} point - Point to clip
-     * @returns {Vec2} Clipped point
-     */
-    clip(point) {
-        const inversePoint = this.inverse().apply(point);
-        const clippedInverse = Rectangle.unitRectangle().clip(inversePoint);
-        return this.apply(clippedInverse);
-    }
-    
-    /** 
-     * Get axis-aligned bounding box of transformed unit rectangle
-     * @returns {Rectangle} Bounding rectangle
-     */
-    boundingRectangle() {
-        const corners = [
-            this.vector,
-            this.apply(new Vec2(1, 0)),
-            this.apply(new Vec2(0, 1)),
-            this.apply(new Vec2(1, 1))
-        ];
-        
-        const xs = corners.map(v => v.x);
-        const ys = corners.map(v => v.y);
-        
-        return new Rectangle(
-            Math.min(...xs),
-            Math.min(...ys),
-            Math.max(...xs),
-            Math.max(...ys)
-        );
-    }
-
-    toPolygon(){
-        const basisVector1 = this.matrix.firstColumnVector();
-        const basisVector2 = this.matrix.secondColumnVector();
-        return new Polygon([
-            this.vector,
-            this.vector.add(basisVector1),
-            this.vector.add(basisVector1).add(basisVector2),
-            this.vector.add(basisVector2)
-        ]);
-    }
 }
 
 /**
@@ -412,18 +367,6 @@ class Rectangle {
     }
 
     /** 
-     * Convert to parallelogram representation 
-     * @returns {Object} Parallelogram object
-     */
-    toParallelogram() {
-        return {
-            origin: new Vec2(this.x1, this.y1),
-            pointY: new Vec2(this.x1, this.y2),
-            pointX: new Vec2(this.x2, this.y1)
-        };
-    }
-
-    /** 
      * Convert to affine transformation 
      * @returns {AffineTransformation} Affine transformation
      */
@@ -432,6 +375,14 @@ class Rectangle {
             new Matrix2(this.width(), 0, 0, this.height()),
             new Vec2(this.x1, this.y1)
         );
+    }
+
+    toPolygon() {
+        return new Polygon([
+            new Vec2(this.x1, this.y1),
+            new Vec2(this.x2, this.y1),
+            new Vec2(this.x2, this.y2),
+            new Vec2(this.x1, this.y2)]);
     }
 
     /** 
@@ -527,10 +478,51 @@ class Polygon {
             const basis_change_matrix = Matrix2.fromColumns(line.direction, direction.negative());
             if (basis_change_matrix.determinant() == 0) continue;
             const scalars = (basis_change_matrix.inverse().apply(start.add(line.origin.negative())));
-            console.log(scalars);
             if ((scalars.y < 0) | (scalars.y >= 1)) continue;
             scalar_array.push(scalars.x);
         }
         return scalar_array.sort().map(scalar => line.origin.add(line.direction.scale(scalar)))
     }
+    distort(matrix){
+        return new Polygon(this.points.map(point => matrix.apply(point)));
+    }
+    translate(vector){
+        return new Polygon(this.points.map(point => vector.add(point)));
+    }
+    transform(affine_transformation){
+        return new Polygon(this.points.map(point => affine_transformation.apply(point)));
+    }
+    boundingRectangle(){
+        return new Rectangle(
+            math.min(...this.points.map(point => point.x)),
+            math.min(...this.points.map(point => point.y)),
+            math.max(...this.points.map(point => point.x)),
+            math.max(...this.points.map(point => point.y))
+        )
+    }
+}
+
+function differential2(f){
+    return function(v) {
+        return new Matrix2(
+            differential(x => f(new Vec2(x, v.y)).x)(v.x),
+            differential(y => f(new Vec2(v.x, y)).x)(v.y),
+            differential(x => f(new Vec2(x, v.y)).y)(v.x),
+            differential(y => f(new Vec2(v.y, y)).y)(v.y)
+        );
+    }
+}
+
+function root2(f){
+    var x = new Vec2(1, 1);
+    for (let _ = 0; _ < 10; _++){
+        var y = f(x);
+        var m = differential2(f)(x);
+        x = x.add(m.inverse().apply(y).negative());
+    }
+    return x;
+}
+
+function inverse2(f){
+    return function(y){return root2(x => f(x).add(y.negative()))}
 }

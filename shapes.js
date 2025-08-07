@@ -137,12 +137,10 @@ class InfiniteGrid extends Shape {
 
     /** Main grid drawing method */
     draw() {
-        // Clear previous grid
-
         const zoomLevel = Math.sqrt(Math.abs(this.world.worldToScreenTransform.matrix.determinant()));
         const zoomLevelInt = Math.ceil(Math.log10(zoomLevel / 100));
         const cellSize = Math.pow(0.1, zoomLevelInt);
-        const visibleArea = this.world.getVisibleWorldBounds();
+        const visibleArea = this.world.getVisibleWorldBounds(0);
         const gridRect = visibleArea.scale(1 / cellSize).expandedToIntegerBounds();
         const gridGroup = document.createElementNS(this.world.svgNS, "g");
         gridGroup.id = this.id;
@@ -218,14 +216,11 @@ class Axes extends Shape{
     }
 
     draw(){
-        const screen_parallelogram = this.world.getShrinkedVisibleWorldArea(30);
-        const screen_polygon = screen_parallelogram.toPolygon();
-        const small_screen_parallelogram = this.world.getShrinkedVisibleWorldArea(30.01);
-        const small_screen_polygon = screen_parallelogram.toPolygon();
+        const screen_polygon = this.world.getVisibleWorldPolygon(30);
         const axesGroup = document.createElementNS(this.world.svgNS, "g");
-        const origin = small_screen_parallelogram.clip(new Vec2(0, 0));
+        const origin = this.world.screenToWorld(this.world.getViewportRect(30.1).clip(this.world.worldToScreen(Vec2.Zero())));
 
-        // x axis
+        // axes
 
         const x_axis = this.Axis(origin, Vec2.EX(), screen_polygon);
         const y_axis = this.Axis(origin, Vec2.EY(), screen_polygon);
@@ -295,6 +290,99 @@ class FunctionGraph extends Shape {
         } catch {
             parsedFunction = math.parse("x");
         }
+        const visibleArea = this.world.getVisibleWorldBounds(0);
+        const graphGroup = document.createElementNS(this.world.svgNS, "g");
+        graphGroup.id = this.id;
+        const pathElement = document.createElementNS(this.world.svgNS, "path");
+        
+        pathElement.setAttribute("stroke", "rgb(95, 194, 86)");
+        pathElement.setAttribute("stroke-width", "1");
+        pathElement.setAttribute("fill", "none");
+        
+        // Build path data by sampling function
+        let pathData = "M";
+        const sampleCount = 300;
+        const step = visibleArea.width() / sampleCount;
+        
+        for (let x_value = visibleArea.x1; x_value <= visibleArea.x2; x_value += step) {
+            try {
+                const screenPoint = this.world.worldToScreen(new Vec2(x_value, parsedFunction.evaluate({x:x_value})));
+                pathData += `${screenPoint.x},${screenPoint.y} `;
+            } catch (e) {
+                // Skip invalid points
+            }
+        }
+        
+        pathElement.setAttribute("d", pathData);
+        graphGroup.appendChild(pathElement);
+        return graphGroup;
+    }
+}
+
+class Transformation extends Shape {
+    /**
+     * 2d Transformation graph renderer
+     * @param {World} world - World reference
+     * @param {Object} attrs - Shape attributes (requires 'func')
+     */
+
+    static specific_attributes = {"x_func":"text","y_func":"text"}
+    static default_specific_attributes = {"x_func":"x+sin(y)","y_func":"y+sin(x)"}
+
+    constructor(world, general_attrs, specific_attrs) {
+        super(world, general_attrs, specific_attrs);
+    }
+
+    /** Draws the transformed Grid */
+    draw() {
+        const parsed_x_func = math.parse(this.x_func);
+        const parsed_y_func = math.parse(this.y_func);
+        const func = (v => new Vec2(parsed_x_func.evaluate({x:v.x,y:v.y}), parsed_y_func.evaluate({x:v.x,y:v.y})));
+        const inverseFunc = inverse2(func);
+
+        const graphGroup = document.createElementNS(this.world.svgNS, "g");
+        const samples = 5;
+        const size = 10;
+
+        // vertical lines
+
+        for (var x_val = -size; x_val <= size; x_val++){
+            const pathElement = document.createElementNS(this.world.svgNS, "path");
+            pathElement.setAttribute("stroke", "rgb(149, 81, 194)");
+            pathElement.setAttribute("stroke-width", "1");
+            pathElement.setAttribute("fill", "none");
+            let pathData = "M";
+            for (var y_val = -10; y_val <= 10; y_val+=1/samples){
+                const screenPoint = this.world.worldToScreen(new Vec2(
+                    parsed_x_func.evaluate({x:x_val,y:y_val}),
+                    parsed_y_func.evaluate({x:x_val,y:y_val})));
+                pathData += `${screenPoint.x},${screenPoint.y} `
+            }
+            pathElement.setAttribute("d", pathData);
+            graphGroup.appendChild(pathElement)
+        }
+
+        // horizontal lines
+
+        for (var y_val = -size; y_val <= size; y_val++){
+            const pathElement = document.createElementNS(this.world.svgNS, "path");
+            pathElement.setAttribute("stroke", "rgb(149, 81, 194)");
+            pathElement.setAttribute("stroke-width", "1");
+            pathElement.setAttribute("fill", "none");
+            let pathData = "M";
+            for (var x_val = -10; x_val <= 10; x_val+=1/samples){
+                const screenPoint = this.world.worldToScreen(new Vec2(
+                    parsed_x_func.evaluate({x:x_val,y:y_val}),
+                    parsed_y_func.evaluate({x:x_val,y:y_val})));
+                pathData += `${screenPoint.x},${screenPoint.y} `
+            }
+            pathElement.setAttribute("d", pathData);
+            graphGroup.appendChild(pathElement)
+        }
+    
+        return graphGroup;
+
+        /*
         const visibleArea = this.world.getVisibleWorldBounds();
         const graphGroup = document.createElementNS(this.world.svgNS, "g");
         graphGroup.id = this.id;
@@ -321,5 +409,6 @@ class FunctionGraph extends Shape {
         pathElement.setAttribute("d", pathData);
         graphGroup.appendChild(pathElement);
         return graphGroup;
+        */
     }
 }

@@ -16,9 +16,9 @@ $(function() {
     
     $('#new-graph').on('click', function() {FunctionGraph.new(worldInstance)})
     $('#new-grid').on('click', function() {InfiniteGrid.new(worldInstance)})
-    $('#new-axes').on('click', function() {
-        new Axes(worldInstance, {"name":"axes","hidden":false,"delete":false}, {});
-    })
+    $('#new-axes').on('click', function() {Axes.new(worldInstance)})
+    $('#new-transform').on('click', function() {Transformation.new(worldInstance)})
+
     // Initial render
     worldInstance.draw();
 });

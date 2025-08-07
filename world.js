@@ -111,36 +111,23 @@ class World {
     }
 
     /** Get viewport boundaries */
-    getViewportRect() {
+    getViewportRect(margin) {
         const rect = this.svg.getBoundingClientRect();
-        return new Rectangle(0, 0, rect.width, rect.height);
+        return new Rectangle(0, 0, rect.width, rect.height).shrink(margin);
+    }
+
+    getViewportPolygon(margin) {
+        return this.getViewportRect(margin).toPolygon();
     }
 
     /** Get current visible area in world coordinates */
-    getVisibleWorldArea() {
-        const screenTransform = this.getViewportRect().toAffineTransform();
-        return this.worldToScreenTransform.inverse().compose(screenTransform);
-    }
-
-    /** Get current visible area in world coordinates */
-    getShrinkedVisibleWorldArea(margin) {
-        const screenTransform = this.getViewportRect().shrink(margin).toAffineTransform();
-        return this.worldToScreenTransform.inverse().compose(screenTransform);
-    }
-
-    /** Get current visible area in world coordinates */
-    getVisibleWorldPolygon() {
-        return this.getVisibleWorldArea().toPolygon();
-    }
-
-    /** Get current visible area in world coordinates */
-    getShrinkedVisibleWorldPolygon(margin) {
-        return this.getShrinkedVisibleWorldArea(margin).toPolygon();
+    getVisibleWorldPolygon(margin) {
+        return this.getViewportPolygon(margin).transform(this.worldToScreenTransform.inverse());
     }
 
     /** Get axis-aligned bounding box of visible world area */
-    getVisibleWorldBounds() {
-        return this.getVisibleWorldArea().boundingRectangle();
+    getVisibleWorldBounds(margin) {
+        return this.getVisibleWorldPolygon(margin).boundingRectangle();
     }
 
     // ================== Utility Methods ================== //
