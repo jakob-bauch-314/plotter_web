@@ -1,14 +1,20 @@
 /* ===== ROOT VARIABLES ===== */
 :root {
     /* Blue color palette with opacity levels */
-    --color-blue-light: rgba(65, 80, 109, 0.726);
-    --color-blue-dark: rgba(25, 30, 41, 0.384);
+    --color-gloss-light: rgba(65, 80, 109, 0.726);
+    --color-gloss-dark: rgba(25, 30, 41, 0.384);
 
-    --color-red-medium: rgb(255,0,0);
+    --color-red-light: rgb(255,0,0);
     --color-red-dark: rgb(97, 0, 0);
 
     --color-beige-light: rgb(216, 211, 136);
     --color-beige-dark: rgb(133, 127, 56);
+
+    --color-green-light: rgb(0, 196, 0);
+    --color-green-dark: green;
+
+    --color-blue-light: rgba(65, 80, 109);
+    --color-blue-dark: rgba(25, 30, 41);
 
     --color-transparent: rgba(0,0,0,0);
 }
@@ -39,8 +45,8 @@ body {
     padding: 5px;
     margin: 5px;
     border-radius: 15px;
-    background-color: var(--color-blue-dark);
-    box-shadow: var(--color-blue-light) 0px 0px 5px 5px inset;
+    background-color: var(--color-gloss-dark);
+    box-shadow: var(--color-gloss-light) 0px 0px 5px 5px inset;
 }
 
 /* ===== UI MODULES ===== */
@@ -51,8 +57,8 @@ body {
     padding: 10px;
     margin: 5px;
     border-radius: 15px;
-    background-color: var(--color-blue-dark);
-    box-shadow: var(--color-blue-light) 0px 0px 5px 5px inset;
+    background-color: var(--color-gloss-dark);
+    box-shadow: var(--color-gloss-light) 0px 0px 5px 5px inset;
 }
 
 /* Attribute sections */
@@ -89,11 +95,11 @@ body {
 .attribute-value {
     margin: 0px;
 }
-
+/*
 .attribute-value:hover{
     box-shadow: var(--color-beige-dark) 0px 0px 2px 2px outset;
 }
-
+*/
 .attribute-value[type="text"] {
     background-color: rgba(5, 0, 22, 0.938);
     color: white;
@@ -123,9 +129,71 @@ body {
     height: 20px;
     border: none;
     border-radius: 5px;
-    background-color: var(--color-red-medium);
+    background-color: var(--color-red-light);
     box-shadow: var(--color-red-dark) 0px 0px 2px 2px inset;
     cursor: pointer;
+}
+
+.attribute-value[type="color"] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 30px;
+    background-color: var(--color-blue-dark);
+    box-shadow: var(--color-blue-light) 0px 0px 3px 3px inset;
+    border: none;
+}
+
+.attribute-value[type="color"]::-webkit-color-swatch {
+    box-shadow: rgba(0, 0, 0, 0.651) 0px 0px 1px 1px inset;
+    border-radius: 10x;
+    border: none;
+    width: 20px;
+    height: 20px;
+}
+
+.attribute-value[type="color"]::-moz-color-swatch {
+    box-shadow: rgba(0, 0, 0, 0.651) 0px 0px 1px 1px inset;
+    border-radius: 10px;
+    border: none;
+    width: 20px;
+    height: 20px;
+}
+
+input[type="range"]{
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: var(--color-blue-light);
+    box-shadow: var(--color-blue-dark) 0px 0px 5px 5px inset;
+    height: 20px;
+    border-radius: 5px;
+}
+
+input[type="range"]::-moz-range-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: none;
+    background-color: var(--color-green-light);
+    box-shadow: var(--color-green-dark) 0px 0px 5px 5px inset;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: none;
+    background-color: var(--color-green-light);
+    box-shadow: var(--color-green-dark) 0px 0px 5px 5px inset;
 }
 
 /* ===== ACTION BUTTONS ===== */
@@ -134,8 +202,8 @@ body {
     height: 30px;
     border: none;
     border-radius: 4px;
-    background-color:rgb(0, 196, 0);
-    box-shadow: green 0px 0px 5px 5px inset;
+    background-color: var(--color-green-light);
+    box-shadow: var(--color-green-dark) 0px 0px 5px 5px inset;
     color: white;
     cursor: pointer;
     transition: background-color 0.2s;

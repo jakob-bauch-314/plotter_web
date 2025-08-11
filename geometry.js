@@ -2,128 +2,86 @@
  * 2D Vector implementation
  */
 class Vec2 {
-    /**
-     * @param {number} x - X coordinate
-     * @param {number} y - Y coordinate
-     */
     constructor(x, y) {
         this.x = x;
         this.y = y;
     }
-    
-    /** 
-     * Vector addition 
-     * @param {Vec2} other - Vector to add
-     * @returns {Vec2} New vector
-     */
+
+    /** Vector addition */
     add(other) {
         return new Vec2(this.x + other.x, this.y + other.y);
     }
-    
-    /** 
-     * Scalar multiplication 
-     * @param {number} scalar - Scaling factor
-     * @returns {Vec2} New vector
-     */
+
+    negative() {
+        return new Vec2(-this.x, -this.y)
+    }
+
+    /** Scalar multiplication */
     scale(scalar) {
         return new Vec2(scalar * this.x, scalar * this.y);
     }
-    
-    /** 
-     * Complex number multiplication (treating vectors as complex numbers)
-     * @param {Vec2} other - Vector to multiply with
-     * @returns {Vec2} New vector
-     */
+
+    /** Complex number multiplication */
     complexMultiply(other) {
         return new Vec2(
             this.x * other.x - this.y * other.y,
             this.x * other.y + this.y * other.x
         );
     }
-    
-    /** 
-     * Dot product 
-     * @param {Vec2} other - Vector to dot with
-     * @returns {number} Dot product result
-     */
+
+    /** Dot product */
     dot(other) {
         return this.x * other.x + this.y * other.y;
     }
-    
-    /** 
-     * Vector magnitude 
-     * @returns {number} Magnitude
-     */
+
+    /** Vector magnitude */
     magnitude() {
         return Math.sqrt(this.dot(this));
     }
-    
-    /** 
-     * Angle in radians 
-     * @returns {number} Angle in radians
-     */
+
+    /** Angle in radians */
     angle() {
         return Math.atan2(this.y, this.x);
     }
-    
-    /** 
-     * Complex exponentiation (treating vector as complex number)
-     * @param {number} exponent - Exponent
-     * @returns {Vec2} New vector
-     */
+
+    /** Complex exponentiation */
     power(exponent) {
-        const r = this.magnitude();
-        const abs = Math.pow(r, exponent);
+        const r = Math.pow(this.magnitude(), exponent);
         const phi = this.angle();
         return new Vec2(
-            Math.cos(exponent * phi), 
-            Math.sin(exponent * phi)
-        ).scale(abs);
+            r * Math.cos(exponent * phi),
+            r * Math.sin(exponent * phi)
+        );
     }
 
-    /** 
-     * Normalized vector (unit vector) 
-     * @returns {Vec2} New normalized vector
-     * @throws {Error} If magnitude is zero
-     */
+    /** Normalized vector */
     normalized() {
         const mag = this.magnitude();
-        if (mag === 0) throw new Error("Cannot normalize zero vector");
+        if (mag < Number.EPSILON) {
+            throw new Error("Cannot normalize zero vector");
+        }
         return this.scale(1 / mag);
     }
 
-    /** 
-     * Negative vector 
-     * @returns {Vec2} New negative vector
-     */
-    negative() {
-        return new Vec2(-this.x, -this.y);
+    /** Vector subtraction */
+    subtract(other) {
+        return new Vec2(this.x - other.x, this.y - other.y);
     }
 
-    static EX() {
-        return new Vec2(1, 0);
+    /** Distance to another vector */
+    distanceTo(other) {
+        return this.subtract(other).magnitude();
     }
 
-    static EY() {
-        return new Vec2(0, 1);
-    }
-
-    static Zero(){
-        return new Vec2(0, 0);
-    }
+    static get EX() { return new Vec2(1, 0); }
+    static get EY() { return new Vec2(0, 1); }
+    static get ZERO() { return new Vec2(0, 0); }
 }
 
-
 /**
- * 2x2 Transformation matrix
+ * 2x2 Matrix implementation
  */
 class Matrix2 {
-    /**
-     * @param {number} a - Element (1,1)
-     * @param {number} b - Element (1,2)
-     * @param {number} c - Element (2,1)
-     * @param {number} d - Element (2,2)
-     */
     constructor(a, b, c, d) {
         this.a = a;
         this.b = b;
@@ -131,65 +89,56 @@ class Matrix2 {
         this.d = d;
     }
 
-    static fromColumns(v1, v2){
-        return new Matrix2(v1.x, v2.x, v1.y, v2.y);
+    /** Create from column vectors */
+    static fromColumns(col1, col2) {
+        return new Matrix2(
+            col1.x, col2.x,
+            col1.y, col2.y
+        );
     }
 
-    static fromRows(v1, v2){
-        return new Matrix2(v1.x, v1.y, v2.x, v2.y);
+    /** Create from row vectors */
+    static fromRows(row1, row2) {
+        return new Matrix2(
+            row1.x, row1.y,
+            row2.x, row2.y
+        );
     }
-    
-    /** 
-     * Apply matrix to vector 
-     * @param {Vec2} vector - Input vector
-     * @returns {Vec2} Transformed vector
-     */
+
+    /** Apply to vector */
     apply(vector) {
         return new Vec2(
-            vector.x * this.a + vector.y * this.b,
-            vector.x * this.c + vector.y * this.d
+            this.a * vector.x + this.b * vector.y,
+            this.c * vector.x + this.d * vector.y
         );
     }
-    
-    /** 
-     * Scalar multiplication 
-     * @param {number} scalar - Scaling factor
-     * @returns {Matrix2} New matrix
-     */
+
+    /** Scalar multiplication */
     scale(scalar) {
         return new Matrix2(
-            scalar * this.a,
-            scalar * this.b,
-            scalar * this.c,
-            scalar * this.d
+            this.a * scalar, this.b * scalar,
+            this.c * scalar, this.d * scalar
         );
     }
-    
-    /** 
-     * Matrix determinant 
-     * @returns {number} Determinant value
-     */
+
+    /** Matrix determinant */
     determinant() {
         return this.a * this.d - this.b * this.c;
     }
-    
-    /** 
-     * Matrix inverse 
-     * @returns {Matrix2} Inverse matrix
-     * @throws {Error} If matrix is singular
-     */
+
+    /** Matrix inverse */
     inverse() {
         const det = this.determinant();
-        if (det === 0) throw new Error("Matrix is singular");
-        return new Matrix2(this.d, -this.b, -this.c, this.a)
-               .scale(1 / det);
+        if (Math.abs(det) < Number.EPSILON) {
+            throw new Error("Matrix is singular");
+        }
+        return new Matrix2(
+            this.d, -this.b,
+            -this.c, this.a
+        ).scale(1 / det);
     }
-    
-    /** 
-     * Matrix multiplication 
-     * @param {Matrix2} other - Matrix to multiply with
-     * @returns {Matrix2} New matrix product
-     */
+
+    /** Matrix multiplication */
     multiply(other) {
         return new Matrix2(
             this.a * other.a + this.b * other.c,
@@ -199,145 +148,122 @@ class Matrix2 {
         );
     }
 
-    /** 
-     * First row as vector 
-     * @returns {Vec2} First row vector
-     */
-    firstRowVector() {
-        return new Vec2(this.a, this.b);
-    }
-
-    /** 
-     * Second row as vector 
-     * @returns {Vec2} Second row vector
-     */
-    secondRowVector() {
-        return new Vec2(this.c, this.d);
-    }
-
-    /** 
-     * First column as vector 
-     * @returns {Vec2} First column vector
-     */
-    firstColumnVector() {
-        return new Vec2(this.a, this.c);
-    }
-
-    /** 
-     * Second column as vector 
-     * @returns {Vec2} Second column vector
-     */
-    secondColumnVector() {
-        return new Vec2(this.b, this.d);
-    }
-
-    /**
-     * Create rotation matrix
-     * @param {number} phi - Rotation angle in radians
-     * @returns {Matrix2} Rotation matrix
-     */
-    static rotationMatrix(phi) {
+    /** Matrix transpose */
+    transpose() {
         return new Matrix2(
-            Math.cos(phi), -Math.sin(phi),
-            Math.sin(phi), Math.cos(phi)
+            this.a, this.c,
+            this.b, this.d
         );
+    }
+
+    /** Create rotation matrix */
+    static rotation(angle) {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        return new Matrix2(
+            cos, -sin,
+            sin, cos
+        );
+    }
+
+    static get IDENTITY() {
+        return new Matrix2(1, 0, 0, 1);
     }
 }
 
-
 /**
- * Affine Transformation (linear transformation + translation)
+ * Affine Transformation implementation
  */
-class AffineTransformation {
-    /**
-     * @param {Matrix2} matrix - Linear transformation matrix
-     * @param {Vec2} vector - Translation vector
-     */
-    constructor(matrix, vector) {
-        this.matrix = matrix;
-        this.vector = vector;
+class AffineTransform {
+    constructor(linear = Matrix2.IDENTITY, translation = Vec2.ZERO) {
+        this.linear = linear;
+        this.translation = translation;
     }
-    
-    /** 
-     * Apply transformation to vector 
-     * @param {Vec2} vector - Input vector
-     * @returns {Vec2} Transformed vector
-     */
+
+    /** Apply to vector */
     apply(vector) {
-        return this.matrix.apply(vector).add(this.vector);
+        return this.linear.apply(vector).add(this.translation);
     }
-    
-    /** 
-     * Inverse transformation 
-     * @returns {AffineTransformation} Inverse transformation
-     * @throws {Error} If matrix is singular
-     */
+
+    /** Inverse transformation */
     inverse() {
-        const invMatrix = this.matrix.inverse();
-        return new AffineTransformation(
-            invMatrix,
-            invMatrix.apply(this.vector.negative())
+        const invLinear = this.linear.inverse();
+        return new AffineTransform(
+            invLinear,
+            invLinear.apply(this.translation).scale(-1)
         );
     }
-    
-    /** 
-     * Compose with another transformation (this ∘ other)
-     * @param {AffineTransformation} other - Other transformation
-     * @returns {AffineTransformation} Composed transformation
-     */
+
+    /** Compose transformations */
     compose(other) {
-        return new AffineTransformation(
-            this.matrix.multiply(other.matrix),
-            this.matrix.apply(other.vector).add(this.vector)
+        return new AffineTransform(
+            this.linear.multiply(other.linear),
+            this.linear.apply(other.translation).add(this.translation)
         );
+    }
+
+    /** Create translation transform */
+    static translation(vector) {
+        return new AffineTransform(Matrix2.IDENTITY, vector);
+    }
+
+    /** Create rotation transform */
+    static rotation(angle, center = Vec2.ZERO) {
+        const linear = Matrix2.rotation(angle);
+        const translation = center.subtract(linear.apply(center));
+        return new AffineTransform(linear, translation);
     }
 }
 
 /**
- * Axis-aligned rectangle representation
+ * Rectangle implementation
  */
 class Rectangle {
-    /**
-     * @param {number} x1 - First x coordinate
-     * @param {number} y1 - First y coordinate
-     * @param {number} x2 - Second x coordinate
-     * @param {number} y2 - Second y coordinate
-     */
     constructor(x1, y1, x2, y2) {
-        this.x1 = Math.min(x1, x2);
-        this.y1 = Math.min(y1, y2);
-        this.x2 = Math.max(x1, x2);
-        this.y2 = Math.max(y1, y2);
+        this.minX = Math.min(x1, x2);
+        this.minY = Math.min(y1, y2);
+        this.maxX = Math.max(x1, x2);
+        this.maxY = Math.max(y1, y2);
     }
 
-    /** 
-     * Rectangle width 
-     * @returns {number} Width
-     */
-    width() { 
-        return this.x2 - this.x1; 
-    }
-    
-    /** 
-     * Rectangle height 
-     * @returns {number} Height
-     */
-    height() { 
-        return this.y2 - this.y1; 
-    }
-
-    /** 
-     * Scale rectangle 
-     * @param {number} scalar - Scaling factor
-     * @returns {Rectangle} New scaled rectangle
-     */
-    scale(scalar) {
-        return new Rectangle(
-            scalar * this.x1, 
-            scalar * this.y1, 
-            scalar * this.x2, 
-            scalar * this.y2
+    get width() { return this.maxX - this.minX; }
+    get height() { return this.maxY - this.minY; }
+    get center() {
+        return new Vec2(
+            (this.minX + this.maxX) / 2,
+            (this.minY + this.maxY) / 2
         );
+    }
+
+    /** Scale rectangle */
+    scale(factor) {
+        return new Rectangle(
+            factor * this.minX, factor * this.minY,
+            factor * this.maxX, factor * this.maxY
+        );
+    }
+
+    /** Expand boundaries */
+    expand(delta) {
+        return new Rectangle(
+            this.minX - delta, this.minY - delta,
+            this.maxX + delta, this.maxY + delta
+        );
+    }
+
+    /** Shrink boundaries */
+    shrink(delta) {
+        return this.expand(-delta);
+    }
+
+    /** Convert to polygon */
+    toPolygon() {
+        return new Polygon([
+            new Vec2(this.minX, this.minY),
+            new Vec2(this.maxX, this.minY),
+            new Vec2(this.maxX, this.maxY),
+            new Vec2(this.minX, this.maxY)
+        ]);
     }
 
     /** 
@@ -346,10 +272,10 @@ class Rectangle {
      */
     expandedToIntegerBounds() {
         return new Rectangle(
-            Math.floor(this.x1), 
-            Math.floor(this.y1), 
-            Math.ceil(this.x2), 
-            Math.ceil(this.y2)
+            Math.floor(this.minX), 
+            Math.floor(this.minY), 
+            Math.ceil(this.maxX), 
+            Math.ceil(this.maxY)
         );
     }
 
@@ -359,170 +285,284 @@ class Rectangle {
      */
     contractedToIntegerBounds() {
         return new Rectangle(
-            Math.ceil(this.x1), 
-            Math.ceil(this.y1), 
-            Math.floor(this.x2), 
-            Math.floor(this.y2)
+            Math.ceil(this.minX), 
+            Math.ceil(this.minY), 
+            Math.floor(this.maxX), 
+            Math.floor(this.maxY)
         );
     }
 
-    /** 
-     * Convert to affine transformation 
-     * @returns {AffineTransformation} Affine transformation
-     */
-    toAffineTransform() {
-        return new AffineTransformation(
-            new Matrix2(this.width(), 0, 0, this.height()),
-            new Vec2(this.x1, this.y1)
-        );
-    }
-
-    toPolygon() {
-        return new Polygon([
-            new Vec2(this.x1, this.y1),
-            new Vec2(this.x2, this.y1),
-            new Vec2(this.x2, this.y2),
-            new Vec2(this.x1, this.y2)]);
-    }
-
-    /** 
-     * Expand rectangle boundaries 
-     * @param {number} d - Expansion amount
-     * @returns {Rectangle} New expanded rectangle
-     */
-    expand(d) {
-        return new Rectangle(
-            this.x1 - d, 
-            this.y1 - d, 
-            this.x2 + d, 
-            this.y2 + d
-        );
-    }
-
-    /** 
-     * Shrink rectangle boundaries 
-     * @param {number} d - Shrink amount
-     * @returns {Rectangle} New shrunk rectangle
-     */
-    shrink(d) {
-        return this.expand(-d);
-    }
-
-    /** 
-     * Clip point to rectangle boundaries 
-     * @param {Vec2} point - Input point
-     * @returns {Vec2} Clipped point
-     */
+    /** Clip point to rectangle */
     clip(point) {
         return new Vec2(
-            Math.max(this.x1, Math.min(point.x, this.x2)),
-            Math.max(this.y1, Math.min(point.y, this.y2))
+            Math.max(this.minX, Math.min(point.x, this.maxX)),
+            Math.max(this.minY, Math.min(point.y, this.maxY))
         );
     }
 
-    expand(d){
-        return new Rectangle(this.x1-d, this.y1-d, this.x2+d, this.y2+d);
+    populate(density){
+        const points = []
+        for (var i = 0; i <= density; i++){
+            for (var j = 0; j <= density; j++){
+                points.push(new Vec2(i * this.width / density + this.minX, j * this.height / density + this.minY));
+            }
+        }
+        return points;
     }
 
-    shrink(d){
-        return this.expand(-d);
+    static bounds(points){
+        return new Rectangle(
+            Math.min(...points.map(point => point.x)),
+            Math.min(...points.map(point => point.y)),
+            Math.max(...points.map(point => point.x)),
+            Math.max(...points.map(point => point.y))
+        )
     }
 
-    /** 
-     * Create unit rectangle [0,0] to [1,1]
-     * @returns {Rectangle} Unit rectangle
-     */
-    static unitRectangle() {
+    /** Create unit rectangle */
+    static get UNIT() {
         return new Rectangle(0, 0, 1, 1);
     }
 }
 
+/**
+ * Line implementation
+ */
 class Line {
-    constructor(origin, direction){
+    constructor(origin, direction) {
         this.origin = origin;
-        this.direction = direction;
+        this.direction = direction.normalized();
     }
-    intersectLine(line){
-        const scalars = Matrix2.fromColumns(this.direction, line.direction).inverse().apply(line.origin.add(this.origin.negative()));
-        return this.origin.add(this.direction.scale(scalars.x));
-    }
-}
 
-class LineSegment {
-    constructor(start, end){
-        this.start = start;
-        this.end = end;
-    }
-    intersectLine(line){
-        const direction = this.end.add(this.start.negative());
+    /** Intersect with another line */
+    intersectLine(other) {
+        const matrix = Matrix2.fromColumns(
+            this.direction, 
+            other.direction.scale(-1)
+        );
+        
         try {
-            const scalar = Matrix2.fromColumns(direction, line.direction).inverse().apply(line.origin.add(this.start.negative())).x;
-            const intersections = ((0 <= scalar) & (scalar < 1)) ? [this.start.add(direction.scale(scalar))] : [];
-            return intersections;
-        } catch {
-            return [];
+            const solution = matrix.inverse().apply(
+                other.origin.subtract(this.origin)
+            );
+            return this.origin.add(this.direction.scale(solution.x));
+        } catch (e) {
+            return null; // Parallel lines
         }
     }
 }
 
-class Polygon {
-    constructor(points){
-        this.points = points;
+/**
+ * Line Segment implementation
+ */
+class LineSegment {
+    constructor(start, end) {
+        this.start = start;
+        this.end = end;
     }
+
+    get direction() {
+        return this.end.subtract(this.start);
+    }
+
+    /** Intersect with line */
+    intersectLine(line) {
+        const segmentVec = this.direction;
+        const matrix = Matrix2.fromColumns(
+            segmentVec, 
+            line.direction.scale(-1)
+        );
+        
+        try {
+            const solution = matrix.inverse().apply(
+                line.origin.subtract(this.start)
+            );
+            const t = solution.x;
+            
+            if (t >= 0 && t <= 1) {
+                return [this.start.add(segmentVec.scale(t))];
+            }
+        } catch (e) {
+            // Lines are parallel
+        }
+        return [];
+    }
+
+    toPath(){
+        return new Path([this.start, this.end]);
+    }
+}
+
+/**
+ * Path implementation
+ */
+
+class Path {
+    constructor(points) {
+        this.vertices = points;
+    }
+
+    /** Transform polygon */
+    transform(transform) {
+        return new Path(
+            this.vertices.map(v => transform.apply(v))
+        );
+    }
+
+    /** Calculate bounding rectangle */
+    boundingRectangle() {
+        const xs = this.vertices.map(v => v.x);
+        const ys = this.vertices.map(v => v.y);
+        return new Rectangle(
+            Math.min(...xs), Math.min(...ys),
+            Math.max(...xs), Math.max(...ys)
+        );
+    }
+
+    /** Intersect with line */
     intersectLine(line){
         var scalar_array = [];
-        for (var i = 0; i < this.points.length; i++){
-            const start = this.points[i % this.points.length];
-            const end = this.points[(i+1) % this.points.length]
-            const direction = end.add(start.negative());
+        for (var i = 0; i < this.vertices.length-1; i++){
+            const start = this.vertices[i % this.vertices.length];
+            const end = this.vertices[(i+1) % this.vertices.length]
+            const direction = end.subtract(start);
             const basis_change_matrix = Matrix2.fromColumns(line.direction, direction.negative());
             if (basis_change_matrix.determinant() == 0) continue;
-            const scalars = (basis_change_matrix.inverse().apply(start.add(line.origin.negative())));
+            const scalars = (basis_change_matrix.inverse().apply(start.subtract(line.origin)));
             if ((scalars.y < 0) | (scalars.y >= 1)) continue;
             scalar_array.push(scalars.x);
         }
         return scalar_array.sort().map(scalar => line.origin.add(line.direction.scale(scalar)))
     }
-    distort(matrix){
-        return new Polygon(this.points.map(point => matrix.apply(point)));
-    }
-    translate(vector){
-        return new Polygon(this.points.map(point => vector.add(point)));
-    }
-    transform(affine_transformation){
-        return new Polygon(this.points.map(point => affine_transformation.apply(point)));
-    }
-    boundingRectangle(){
-        return new Rectangle(
-            math.min(...this.points.map(point => point.x)),
-            math.min(...this.points.map(point => point.y)),
-            math.max(...this.points.map(point => point.x)),
-            math.max(...this.points.map(point => point.y))
-        )
-    }
-}
 
-function differential2(f){
-    return function(v) {
-        return new Matrix2(
-            differential(x => f(new Vec2(x, v.y)).x)(v.x),
-            differential(y => f(new Vec2(v.x, y)).x)(v.y),
-            differential(x => f(new Vec2(x, v.y)).y)(v.x),
-            differential(y => f(new Vec2(v.y, y)).y)(v.y)
+    subdivide(n) {
+        return new Path(
+            this.vertices.flatMap((v, i) => {
+                if (i === this.vertices.length - 1) {
+                    // Last vertex — don't connect to first
+                    return [v];
+                }
+                const next = this.vertices[i + 1];
+                return Array.from({ length: n }, (_, j) =>
+                    v.add(
+                        next
+                            .subtract(v)
+                            .scale(j / n)
+                    )
+                );
+            })
         );
     }
-}
 
-function root2(f){
-    var x = new Vec2(1, 1);
-    for (let _ = 0; _ < 10; _++){
-        var y = f(x);
-        var m = differential2(f)(x);
-        x = x.add(m.inverse().apply(y).negative());
+
+    closed(){
+        return new Polygon(this.vertices);
     }
-    return x;
+
+    map(f){
+        return new Path(this.vertices.map(f));
+    }
 }
 
-function inverse2(f){
-    return function(y){return root2(x => f(x).add(y.negative()))}
+/**
+ * Polygon implementation
+ */
+class Polygon {
+    constructor(points) {
+        this.vertices = points;
+    }
+
+    /** Transform polygon */
+    transform(transform) {
+        return new Polygon(
+            this.vertices.map(v => transform.apply(v))
+        );
+    }
+
+    /** Calculate bounding rectangle */
+    boundingRectangle() {
+        const xs = this.vertices.map(v => v.x);
+        const ys = this.vertices.map(v => v.y);
+        return new Rectangle(
+            Math.min(...xs), Math.min(...ys),
+            Math.max(...xs), Math.max(...ys)
+        );
+    }
+
+    /** Intersect with line */
+    intersectLine(line){
+        var scalar_array = [];
+        for (var i = 0; i < this.vertices.length; i++){
+            const start = this.vertices[i % this.vertices.length];
+            const end = this.vertices[(i+1) % this.vertices.length]
+            const direction = end.subtract(start);
+            const basis_change_matrix = Matrix2.fromColumns(line.direction, direction.negative());
+            if (basis_change_matrix.determinant() == 0) continue;
+            const scalars = (basis_change_matrix.inverse().apply(start.subtract(line.origin)));
+            if ((scalars.y < 0) | (scalars.y >= 1)) continue;
+            scalar_array.push(scalars.x);
+        }
+        return scalar_array.sort().map(scalar => line.origin.add(line.direction.scale(scalar)))
+    }
+
+    subdivide(n) {
+        return new Polygon(
+            this.vertices.flatMap((v, i) => 
+                Array.from({length: n}, (_, j) => 
+                    v.add(
+                        this.vertices[(i+1) % this.vertices.length]
+                            .subtract(v)
+                            .scale(j/n)
+                    )
+                )
+            )
+        );
+    }
+
+    map(f){
+        return new Polygon(this.vertices.map(f));
+    }
 }
+
+/**
+ * Numerical Utilities
+ */
+const Numerical = {
+    /** Calculate Jacobian matrix */
+    jacobian(f) {
+        const h = 1e-5;
+        return function(v) {
+            const fx = (dx) => f(new Vec2(v.x + dx, v.y));
+            const fy = (dy) => f(new Vec2(v.x, v.y + dy));
+            
+            return new Matrix2(
+                (fx(h).x - f(v).x) / h, (fy(h).x - f(v).x) / h,
+                (fx(h).y - f(v).y) / h, (fy(h).y - f(v).y) / h
+            );
+        };
+    },
+
+    /** Find 2D root using Newton's method */
+    findRoot2D(f, initial = new Vec2(1, 1), maxIterations = 20, tolerance = 1e-7) {
+        let x = initial;
+        
+        for (let i = 0; i < maxIterations; i++) {
+            const y = f(x);
+            if (y.magnitude() < tolerance) break;
+            
+            try {
+                const J = this.jacobian(f)(x);
+                const delta = J.inverse().apply(y);
+                x = x.subtract(delta);
+            } catch (e) {
+                break; // Singular matrix
+            }
+        }
+        return x;
+    },
+
+    /** Inverse of 2D function */
+    inverse2D(f) {
+        return y => this.findRoot2D(x => f(x).subtract(y));
+    }
+};

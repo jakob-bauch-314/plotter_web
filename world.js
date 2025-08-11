@@ -12,13 +12,13 @@ class World {
         const rect = svgElement.getBoundingClientRect();
         this.viewportSize = new Vec2(rect.width, rect.height);
         this.zoomFactorMatrix = new Matrix2(1.3, 0, 0, 1.3);
-        this.rotationFactorMatrix = Matrix2.rotationMatrix(Math.PI/32);
+        this.rotationFactorMatrix = Matrix2.rotation(Math.PI/32);
         this.shapes = shapes;
         this.isDragging = false;
         this.currentMousePosition = new Vec2(0, 0);
         this.lastMousePosition = new Vec2(0, 0);
         
-        this.worldToScreenTransform = new AffineTransformation(
+        this.worldToScreenTransform = new AffineTransform(
             new Matrix2(50, 0, 0, -50),     // Initial zoom
             this.viewportSize.scale(0.5)     // Center view
         );
@@ -28,6 +28,8 @@ class World {
         this.handleMouseUp = this.handleMouseUp.bind(this);
         this.handleMouseMove = this.handleMouseMove.bind(this);
         this.handleMouseScroll = this.handleMouseScroll.bind(this);
+        this.worldToScreen = this.worldToScreen.bind(this);
+        this.screenToWorld = this.screenToWorld.bind(this);
     }
 
     // ================== Event Handlers ================== //
@@ -44,14 +46,12 @@ class World {
         if (!this.isDragging) return;
         
         this.currentMousePosition = this.getMousePosition(event);
-        const dragDelta = this.currentMousePosition.add(
-            this.lastMousePosition.negative()
-        );
+        const dragDelta = this.currentMousePosition.subtract(this.lastMousePosition);
         
         // Apply panning transformation
-        this.worldToScreenTransform = new AffineTransformation(
-            this.worldToScreenTransform.matrix,
-            this.worldToScreenTransform.vector.add(dragDelta)
+        this.worldToScreenTransform = new AffineTransform(
+            this.worldToScreenTransform.linear,
+            this.worldToScreenTransform.translation.add(dragDelta)
         );
         
         this.lastMousePosition = this.currentMousePosition;
@@ -130,6 +130,10 @@ class World {
         return this.getVisibleWorldPolygon(margin).boundingRectangle();
     }
 
+    getWorldCenter(){
+        return this.screenToWorld(this.getViewportRect(0).center);
+    }
+
     // ================== Utility Methods ================== //
     /** Get mouse position relative to SVG */
     getMousePosition(event) {
@@ -149,15 +153,15 @@ class World {
      * @param {Vec2} fixedPoint - World point that should remain fixed
      */
     applyZoom(transformation, fixedPoint) {
-        const currentMatrix = this.worldToScreenTransform.matrix;
-        const currentVector = this.worldToScreenTransform.vector;
+        const currentMatrix = this.worldToScreenTransform.linear;
+        const currentVector = this.worldToScreenTransform.translation;
         
         const newMatrix = currentMatrix.multiply(transformation);
         const fixedScreen = currentMatrix.apply(fixedPoint).add(currentVector);
         const newFixedScreen = newMatrix.apply(fixedPoint).add(currentVector);
-        const offset = fixedScreen.add(newFixedScreen.negative());
+        const offset = fixedScreen.subtract(newFixedScreen);
         
-        this.worldToScreenTransform = new AffineTransformation(
+        this.worldToScreenTransform = new AffineTransform(
             newMatrix,
             currentVector.add(offset)
         );

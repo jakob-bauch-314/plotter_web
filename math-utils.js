@@ -1,50 +1,78 @@
 /**
- * Helper function to count trailing zeros in a number for grid rendering
- * @param {number} n - Input number
- * @param {number} m - Max zeros to count
- * @returns {number} Count of trailing zeros
+ * Counts trailing zeros in an integer using iterative method
+ * @param {number} num - Input number (should be integer)
+ * @param {number} maxZeros - Maximum zeros to count
+ * @returns {number} Count of trailing zeros (0 to maxZeros)
  */
-function countTrailingZeros(n, m) {
-    if (m === 0) return 0;
-    if (n % 10 === 0) return countTrailingZeros(n / 10, m - 1) + 1;
-    return 0;
+function countTrailingZeros(num, maxZeros) {
+    if (maxZeros <= 0 || num === 0) return 0;
+    
+    let count = 0;
+    let current = Math.abs(num);
+    
+    while (current % 10 === 0 && count < maxZeros) {
+        count++;
+        current = Math.floor(current / 10);
+    }
+    return count;
 }
 
-function clip(x, a, b){
-    if (x<a){return a}
-    if (x>b){return b}
+/**
+ * Clips a value between specified bounds
+ * @param {number} value - Input value
+ * @param {number} min - Lower bound
+ * @param {number} max - Upper bound
+ * @returns {number} Clamped value
+ */
+function clip(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+}
+
+/**
+ * Determines grid line prominence rank based on trailing zeros
+ * @param {number} num - Grid coordinate value
+ * @returns {number} Rank value (0-3)
+ */
+function determineGridLineRank(num) {
+    if (num === 0) return 3;  // Highest rank for origin
+    return countTrailingZeros(num, 2);
+}
+
+/**
+ * Creates derivative function using central difference method
+ * @param {Function} func - Original function
+ * @returns {Function} Derivative function
+ */
+function derivative(func) {
+    const dx = 1e-5;
+    return x => (func(x + dx) - func(x - dx)) / (2 * dx);
+}
+
+/**
+ * Finds function root using Newton-Raphson method
+ * @param {Function} func - Target function
+ * @param {number} [initialGuess=0] - Starting point
+ * @param {number} [iterations=10] - Maximum iterations
+ * @returns {number} Approximate root
+ */
+function findRoot(func, initialGuess = 0, iterations = 10) {
+    let x = initialGuess;
+    const df = derivative(func);
+    
+    for (let i = 0; i < iterations; i++) {
+        const slope = df(x);
+        if (Math.abs(slope) < 1e-7) break;  // Prevent division by zero
+        
+        x = x - func(x) / slope;
+    }
     return x;
 }
 
 /**
- * Determines grid line prominence based on number properties
- * @param {number} n - Input number
- * @returns {number} Rank value (0-4)
+ * Creates inverse function using root finding
+ * @param {Function} func - Original function
+ * @returns {Function} Inverse function
  */
-function determineGridLineRank(n) {
-    if (n < 0) return countTrailingZeros(-n, 2);
-    if (n === 0) return 3;  // Special rank for origin
-    return countTrailingZeros(n, 2);
-}
-
-
-function differential(f){
-    const d = 0.00001;
-    return function(x) {
-        return (f(x+d)-f(x))/d
-    }
-}
-
-function root(f){
-    var x = 0;
-    for (let _ = 0; _ < 10; _++){
-        var y = f(x);
-        var m = differential(f)(x);
-        x = x - y/m;
-    }
-    return x;
-}
-
-function inverse(f){
-    return function(y){return root(x => f(x) - y)}
+function inverse(func) {
+    return y => findRoot(x => func(x) - y);
 }
