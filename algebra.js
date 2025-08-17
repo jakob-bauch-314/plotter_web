@@ -1,3 +1,5 @@
+/*
+
 const algebra = (() => {
     // Helper Functions (unchanged)
     const createArray = (func, ...dimensions) => {
@@ -242,6 +244,16 @@ const algebra = (() => {
         get a39() { return this.arr[8][2] } get a69() { return this.arr[11][2] } get a99() { return this.arr[14][2] }
 
         // Matrix operations
+
+        transpose() {
+            return new this.constructor(
+                secretToken,
+                this.height,
+                this.width,
+                (i, j) => this.arr[j][i]
+            )
+        }
+
         scale(scalar) {
             return new this.constructor(
                 secretToken, 
@@ -398,40 +410,9 @@ const algebra = (() => {
         inverse() {
             throw new Error("Abstract method: inverse must be implemented"); 
         }
-
-        static unit(size) {
-            return this.create(size, (i, j) => i === j ? 1 : 0);
-        }
-
-        static basis(size, I, J) {
-            return this.create(size, (i, j) => i === I && j === J ? 1 : 0);
-        }
-
-        static frobius(size, j1, j2, scalar) {
-            return this.create(size, (i, j) => 
-                i === j ? 1 : (i === j1 && j === j2) ? scalar : 0
-            );
-        }
-
-        static swap(size, j1, j2) {
-            return this.create(size, (i, j) => {
-                if (i === j1 && j === j1) return 0;
-                if (i === j2 && j === j2) return 0;
-                if (i === j1 && j === j2) return 1;
-                if (i === j2 && j === j1) return 1;
-                return i === j ? 1 : 0;
-            });
-        }
     }
 
     class Matrix1 extends SquareMatrix {
-        constructor(token, width, height, func) {
-            super(token, width, height, func);
-            if (width !== 1 || height !== 1) {
-                throw new Error("Matrix1 must be 1x1");
-            }
-        }
-
         static create(a11) {
             return new this(secretToken, 1, 1, () => a11);
         }
@@ -496,9 +477,81 @@ const algebra = (() => {
     }
 
     // Special Matrix Types
-    class Triangular extends SquareMatrix {}
-    class Frobius extends SquareMatrix {}
-    class Permutation extends SquareMatrix {}
+
+    class UpperTriangular extends SquareMatrix {
+        static create(size, func) {
+            return new this(secretToken, size, size, (i, j) => (j >= i)? func(i, j) : 0);
+        }
+
+        determinant() {
+            return Array.from({length: this.width}, (_, i) => this.arr[i][i]).reduce((product, element) => product * element, 1)
+        }
+    }
+
+    class LowerTriangular extends SquareMatrix {
+        static create(size, func) {
+            return new this(secretToken, size, size, (i, j) => (j <= i)? func(i, j) : 0);
+        }
+
+        determinant() {
+            return Array.from({length: this.width}, (_, i) => this.arr[i][i]).reduce((product, element) => product * element, 1)
+        }
+    }
+
+    class Diagonal extends SquareMatrix{
+        static create(...vals){
+            return new this(secretToken, vals.length, vals.length, (i, j) => (i==j)? vals[i] : 0)
+        }
+
+        determinant() {
+            return Array.from({length: this.width}, (_, i) => this.arr[i][i]).reduce((product, element) => product * element, 1)
+        }
+    }
+
+    class Frobius extends SquareMatrix {
+        static create(width, j1, j2, scalar){
+            return new this(secretToken, width, width, (i, j) => {
+                (i==j)? 1 : ((i==j1 & j==j2)? scalar : 0)
+            })
+        }
+        
+        determinant(){
+            return 1;
+        }
+    }
+
+    class Permutation extends SquareMatrix {
+
+        // constructor
+
+        static create(){
+
+        }
+
+        static swap(size, j1, j2) {
+            return this.create(size, (i, j) => {
+                if (i === j1 && j === j1) return 0;
+                if (i === j2 && j === j2) return 0;
+                if (i === j1 && j === j2) return 1;
+                if (i === j2 && j === j1) return 1;
+                return i === j ? 1 : 0;
+            });
+        }
+
+        determinant(){
+class SquareMatrix extends Matrix {
+    constructor(size, field, f){
+        super(size, size, field, f);
+    }
+}
+
+        }
+
+        inverse() {
+            return this.transpose();
+        }
+    
+    }
 
     // Vector Spaces
     class VectorSpace {
@@ -587,7 +640,9 @@ const algebra = (() => {
         Matrix1,
         Matrix2,
         Matrix3,
-        Triangular,
+        UpperTriangular,
+        LowerTriangular,
+        Diagonal,
         Frobius,
         Permutation,
         
@@ -599,34 +654,8 @@ const algebra = (() => {
 })();
 
 // Usage Examples
-// Create matrices
-const m1 = algebra.Matrix1.create(5);
-const m2 = algebra.Matrix2.create(1, 2, 3, 4);
 
-// Matrix operations
-const scaled = m2.scale(2);
-const sum = m2.add(m2);
+D = algebra.Diagonal.create(1, 2, 3, 4);
+console.log(D.determinant());
 
-// Verify types
-console.log(m1 instanceof algebra.Matrix1); // true
-console.log(m2 instanceof algebra.Matrix2); // true
-console.log(scaled instanceof algebra.Matrix2); // true
-console.log(sum instanceof algebra.Matrix2); // true
-
-// Determinant and inverse
-console.log("Matrix2 determinant:", m2.determinant()); // -2
-const inv = m2.inverse();
-console.log("Matrix2 inverse:", inv.toString());
-
-// Linear transformation
-const vs = new algebra.VectorSpace(
-    new algebra.Tuple(1, 0),
-    new algebra.Tuple(0, 1)
-);
-const lt = new algebra.LinearTransform(
-    vs,
-    vs,
-    algebra.Matrix2.create(2, 0, 0, 3)
-);
-const result = lt.apply(new algebra.Tuple(1, 1));
-console.log("Linear transform result:", result.toString()); // (2, 3)
+*/
