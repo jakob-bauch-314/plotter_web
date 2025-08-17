@@ -1,3 +1,6 @@
+
+// helper functions
+
 const createArray = (func, ...dimensions) => {
     if (dimensions.length === 0) return func();
     const [first, ...rest] = dimensions;
@@ -7,105 +10,71 @@ const createArray = (func, ...dimensions) => {
     );
 };
 
-/**
- * Represents a mathematical set defined by a characteristic function.
- * @param {function} contains - Function that returns true if element is in set
- */
-class Set {
-    constructor(contains) {
-        this.contains = contains;
-    }
+// Basic algebraic Datatypes
 
-    intersect(other) {
-        return new Set(e => this.contains(e) && other.contains(e));
-    }
-
-    union(other) {
-        return new Set(e => this.contains(e) || other.contains(e));
-    }
-
-    invert() {
-        return new Set(e => !this.contains(e));
-    }
-}
-
-// Basic algebraic structures
-class Group extends Set {
-    /**
-     * Creates a Group
-     * @param {function} contains - Membership function
-     * @param {function} add - Group operation (binary)
-     * @param {*} addIdentity - Identity element
-     * @param {function} addInvert - Inversion function
-     */
-    constructor(contains, add, addIdentity, addInvert) {
-        super(contains);
-        this.add = add;
-        this.addInvert = addInvert;
-        this.addIdentity = addIdentity;
-    }
-}
-
-class Ring extends Group {
-    /**
-     * Creates a Ring
-     * @param {function} contains - Membership function
-     * @param {function} add - Addition operation
-     * @param {*} addIdentity - Additive identity
-     * @param {function} addInvert - Additive inverse
-     * @param {function} multiply - Multiplication operation
-     * @param {*} multiplyIdentity - Multiplicative identity
-     */
-    constructor(contains, add, addIdentity, addInvert, multiply, multiplyIdentity) {
-        super(contains, add, addIdentity, addInvert);
-        this.multiply = multiply;
-        this.multiplyIdentity = multiplyIdentity;
-    }
-}
-
-class Field extends Ring {
-    /**
-     * Creates a Field
-     * @param {function} contains - Membership function
-     * @param {function} add - Addition operation
-     * @param {*} addIdentity - Additive identity (0)
-     * @param {function} addInvert - Additive inverse
-     * @param {function} multiply - Multiplication operation
-     * @param {*} multiplyIdentity - Multiplicative identity (1)
-     * @param {function} multiplyInvert - Multiplicative inverse (for non-zero)
-     */
-    constructor(contains, add, addIdentity, addInvert, multiply, multiplyIdentity, multiplyInvert) {
-        super(contains, add, addIdentity, addInvert, multiply, multiplyIdentity);
-        this.multiplyInvert = multiplyInvert;
-    }
-}
-
-// Linear algebra
-class VectorSpace {
-    /**
-     * Creates a Vector Space
-     * @param {Set} vectors - Set of vectors
-     * @param {Field} scalars - Field of scalars
-     * @param {function} add - Vector addition
-     * @param {function} scale - Scalar multiplication
-     */
-    constructor(vectors, scalars, add, scale) {
-        this.vectors = vectors;
-        this.scalars = scalars;
-        this.add = add;
-        this.scale = scale;
-    }
-}
-
-class Tuple {
-    /**
-     * Creates a Tuple (vector) over a field
-     * @param {Field} field - Underlying field
-     * @param  {...*} elements - Tuple components
-     */
-    constructor(field, ...elements) {
-        this.elements = elements;
+class Vector {
+    constructor(field){
+        if (!(field instanceof Field)) {throw new TypeError("Field must be an instance of Field");}
         this.field = field;
+    }
+
+    add(other){
+        if (!(other instanceof this.constructor)) {throw new TypeError("Operand must be a Vector");}
+        if (this.field !== other.field) {throw new Error("underlying fields must match for addition");}
+    }
+
+    subtract(other){
+        if (!(other instanceof this.constructor)) {throw new TypeError("Operand must be a Vector");}
+        if (this.field !== other.field) {throw new Error("underlying fields must match for addition");}
+    }
+
+    scale(scalar){
+        if (!this.field.contains(scalar)) {throw new Error("cant scale by factor that isn't part of underlying field");}
+    }
+}
+
+class Complex {
+    constructor(real, imag) {
+        this.real = real;
+        this.imag = imag;
+    }
+
+    add(other) {
+        return new Complex(
+            this.real + other.real,
+            this.imag + other.imag
+        );
+    }
+
+    multiply(other) {
+        return new Complex(
+            this.real * other.real - this.imag * other.imag,
+            this.real * other.imag + this.imag * other.real
+        );
+    }
+
+    negate() {
+        return new Complex(-this.real, -this.imag);
+    }
+
+    inverse() {
+        const denominator = this.real * this.real + this.imag * this.imag;
+        return new Complex(
+            this.real / denominator,
+            -this.imag / denominator
+        );
+    }
+
+    equals(other) {
+        return this.real === other.real && this.imag === other.imag;
+    }
+}
+
+class Tuple extends Vector{
+
+    constructor(field, ...elements) {
+        super(field);
+        this.elements = elements;
     }
 
     getEntry(i) {
@@ -118,52 +87,54 @@ class Tuple {
     get dimensions() { return this.elements.length }
 
     add(other) {
-        if (!(other instanceof Tuple)) {
-            throw new TypeError("Operand must be a Tuple");
-        }
-        if (this.dimensions !== other.dimensions) {
-            throw new Error("Tuple dimensions must match for addition");
-        }
-        return new Tuple(
-            this.field, 
-            ...this.elements.map((e, i) => this.field.add(e, other.elements[i]))
-        );
+        if (!(other instanceof Tuple)) {throw new TypeError("Operand must be a Tuple");}
+        if (this.dimensions !== other.dimensions) {throw new Error("Tuple dimensions must match for addition");}
+        if (this.field !== other.field) {throw new Error("underlying fields must match for addition")}
+
+        return new Tuple(this.field, ...this.elements.map((e, i) => this.field.add(e, other.elements[i])));
     }
 
     subtract(other) {
-        if (!(other instanceof Tuple)) {
-            throw new TypeError("Operand must be a Tuple");
-        }
-        if (this.dimensions !== other.dimensions) {
-            throw new Error("Tuple dimensions must match for subtraction");
-        }
-        return new Tuple(
-            this.field,
-            ...this.elements.map((e, i) => this.field.add(e, this.field.addInvert(other.elements[i])))
-        );
+        if (!(other instanceof Tuple)) {throw new TypeError("Operand must be a Tuple");}
+        if (this.dimensions !== other.dimensions) {throw new Error("Tuple dimensions must match for subtraction");}
+        if (this.field !== other.field) {throw new Error("underlying fields must match for subtraction")}
+
+        const field = this.field;
+        const dimensions = this.dimensions;
+
+        return new Tuple(field, ...this.elements.map((e, i) => field.subtract(e, other.elements[i])));
     }
 
     scale(scalar) {
-        return new Tuple(this.field, ...this.elements.map(e => this.field.multiply(scalar, e)));
+
+
+        const field = this.field;
+
+        return new Tuple(field, ...this.elements.map(e => field.multiply(scalar, e)));
     }
 
     outerProduct(other) {
-        return new Matrix(
-            other.dimensions,
-            this.dimensions,
-            this.field,
-            (i, j) => this.field.multiply(this.getEntry(i), other.getEntry(j))
-        );
+
+        if (!(other instanceof Tuple)) {throw new TypeError("Operand must be a Tuple");}
+        if (this.field !== other.field) {throw new Error("underlying fields must match for outer Product")}
+
+        const field = this.field;
+        const width = other.dimensions;
+        const height = this.dimensions;
+
+        return new Matrix(width, height, field, (i, j) => field.multiply(this.getEntry(i), other.getEntry(j)));
     }
 
     innerProduct(other) {
-        if (this.dimensions !== other.dimensions) {
-            throw new Error("Tuple dimensions must match for inner product");
-        }
-        return this.elements.reduce(
-            (sum, e, i) => this.field.add(sum, this.field.multiply(e, other.getEntry(i))),
-            this.field.addIdentity
-        );
+
+        if (!(other instanceof Tuple)) {throw new TypeError("Operand must be a Tuple");}
+        if (this.dimensions !== other.dimensions) {throw new Error("Tuple dimensions must match for inner Product");}
+        if (this.field !== other.field) {throw new Error("underlying fields must match for inner Product")}
+
+        const dimensions = this.dimensions;
+        const field = this.field;
+
+        return this.elements.reduce((sum, e, i) => field.add(sum, field.multiply(e, other.getEntry(i))), field.addIdentity);
     }
 
     static ZERO(field, size) {
@@ -171,7 +142,7 @@ class Tuple {
     }
 }
 
-class Matrix {
+class Matrix extends Vector{
     /**
      * Creates a Matrix
      * @param {number} width - Number of columns
@@ -180,12 +151,9 @@ class Matrix {
      * @param {function} f - Function (i, j) => element at row i, column j
      */
     constructor(width, height, field, f) {
-        if (!(field instanceof Field)) {
-            throw new TypeError("Field must be an instance of Field");
-        }
+        super(field);
         this.width = width;
         this.height = height;
-        this.field = field;
         this.arr = createArray((i, j) => f(i, j), height, width);
     }
 
@@ -200,34 +168,25 @@ class Matrix {
         });
     }
 
-    static Frobenius(size, field, j1, j2, scalar){
-        return new Matrix(
-            size, size, field, (i, j) => {
-                if (i === j) return 1;
-                if (i === j1 && j === j2) return scalar;
-                return 0;
-            }
-        )
-    }
-
     toString() {
-        const colWidths = Array(this.height).fill(0);
-        
-        for (let i = 0; i < this.height; i++) {
-            for (let j = 0; j < this.width; j++) {
-                const val = this.arr[j][i].toString();
-                if (val.length > colWidths[i]) {
-                    colWidths[i] = val.length;
+        // Calculate max width for each column
+        const colWidths = Array(this.width).fill(0);
+        for (let j = 0; j < this.width; j++) {
+            for (let i = 0; i < this.height; i++) {
+                const val = this.getEntry(i, j).toString();
+                if (val.length > colWidths[j]) {
+                    colWidths[j] = val.length;
                 }
             }
         }
         
+        // Build row strings
         const rows = [];
         for (let i = 0; i < this.height; i++) {
             const row = [];
             for (let j = 0; j < this.width; j++) {
-                const val = this.arr[j][i].toString();
-                row.push(val.padStart(colWidths[i], ''));
+                const val = this.getEntry(i, j).toString();
+                row.push(val.padStart(colWidths[j], ' '));
             }
             rows.push(`[ ${row.join(' | ')} ]`);
         }
@@ -243,49 +202,33 @@ class Matrix {
     }
 
     add(other) {
-        if (!(other instanceof Matrix)) {
-            throw new TypeError("Operand must be a Matrix");
-        }
-        if (this.width !== other.width || this.height !== other.height) {
-            throw new Error("Matrix dimensions must match for addition");
-        }
-        return new Matrix(
-            this.width, 
-            this.height, 
-            this.field, 
-            (i, j) => this.field.add(
-                this.getEntry(i, j), 
-                other.getEntry(i, j)
-            )
-        );
+        if (!(other instanceof Matrix)) {throw new TypeError("Operand must be a Matrix");}
+        if (this.width !== other.width || this.height !== other.height) {throw new Error("Matrix dimensions must match for addition");}
+        if (this.field !== other.field) {throw new Error("underlying fields must match for addition")}
+
+        const field = this.field;
+        const width = this.width;
+        const height = this.height;
+
+        return new Matrix(width, height, field, (i, j) => field.add(this.getEntry(i, j), other.getEntry(i, j)));
     }
 
     subtract(other) {
-        if (!(other instanceof Matrix)) {
-            throw new TypeError("Operand must be a Matrix");
-        }
-        if (this.width !== other.width || this.height !== other.height) {
-            throw new Error("Matrix dimensions must match for subtraction");
-        }
-        return new Matrix(
-            this.width,
-            this.height,
-            this.field,
-            (i, j) => this.field.add(
-                this.getEntry(i, j),
-                this.field.addInvert(other.getEntry(i, j))
-            )
-        );
+        if (!(other instanceof Matrix)) {throw new TypeError("Operand must be a Matrix");}
+        if (this.width !== other.width || this.height !== other.height) {throw new Error("Matrix dimensions must match for subtraction");}
+        if (this.field !== other.field) {throw new Error("underlying fields must match for subtraction")}
+
+        const field = this.field;
+        const width = this.width;
+        const height = this.height;
+
+        return new Matrix(width, height, field, (i, j) => this.field.subtract(this.getEntry(i, j), other.getEntry(i, j)));
     }
 
     multiplyTuple(tuple) {
-        if (!(tuple instanceof Tuple)) {
-            throw new TypeError("Operand must be a Tuple");
-        }
-
-        if (this.width !== tuple.dimensions) {
-            throw new Error("Inner dimensions must match for matrix multiplication");
-        }
+        if (!(tuple instanceof Tuple)) {throw new TypeError("Operand must be a tuple");}
+        if (this.width !== tuple.dimensions) {throw new Error("Matrix dimensions must match for multiplication");}
+        if (this.field !== tuple.field) {throw new Error("underlying fields must match for multiplication")}
 
         const field = this.field;
         return new Tuple(
@@ -305,12 +248,10 @@ class Matrix {
     }
 
     multiply(other) {
-        if (!(other instanceof Matrix)) {
-            throw new TypeError("Operand must be a Matrix");
-        }
-        if (this.width !== other.height) {
-            throw new Error("Inner dimensions must match for matrix multiplication");
-        }
+        if (!(other instanceof Matrix)) {throw new TypeError("Operand must be a tuple");}
+        if (this.width !== other.height || this.height !== other.height) {throw new Error("Matrix dimensions must match for multiplication");}
+        if (this.field !== other.field) {throw new Error("underlying fields must match for multiplication")}
+
         const field = this.field;
         return new Matrix(
             other.width,
@@ -331,6 +272,8 @@ class Matrix {
     }
 
     scale(scalar) {
+        if (!this.field.contains(scalar)) {throw new Error("cant scale by factor that isn't part of underlying field")}
+
         return new Matrix(
             this.width,
             this.height,
@@ -428,8 +371,7 @@ class Matrix {
         const A_inv = A.inverseLowerTriangular();
         
         // Compute c = -A⁻¹v/a
-        const c = A_inv.multiplyTuple(v)
-                .scale(this.field.multiplyInvert(-a));
+        const c = A_inv.multiplyTuple(v).scale(this.field.multiplyInvert(-a));
         
         // Corrected assembly order
         return Matrix.assemble(
@@ -509,9 +451,9 @@ class Matrix {
         }
         const n = this.width;
         const [L, U, P, swaps] = this.LUP();
-        const sign = ((swaps % 2) == 0)? 1 : -1;
         const diagonal = Array.from({length: n}, (_, i) => U.getEntry(i, i));
-        return sign * diagonal.reduce((prod, e) => this.field.multiply(prod, e), this.field.multiplyIdentity);
+        const result = diagonal.reduce((prod, e) => this.field.multiply(prod, e), this.field.multiplyIdentity);
+        return ((swaps % 2) == 0)? result : this.field.addInvert(result);
     }
 
     inverse() {
@@ -529,6 +471,100 @@ class Matrix {
         return new Matrix(size, size, field, (i, j) => 
             i === j ? field.multiplyIdentity : field.addIdentity
         );
+    }
+}
+
+// Basic algebraic Structures
+class Set {
+    constructor(contains) {
+        this.contains = contains;
+    }
+
+    intersect(other) {
+        return new Set(e => this.contains(e) && other.contains(e));
+    }
+
+    union(other) {
+        return new Set(e => this.contains(e) || other.contains(e));
+    }
+
+    invert() {
+        return new Set(e => !this.contains(e));
+    }
+}
+
+class Group extends Set {
+    /**
+     * Creates a Group
+     * @param {function} contains - Membership function
+     * @param {function} add - Group operation (binary)
+     * @param {*} addIdentity - Identity element
+     * @param {function} addInvert - Inversion function
+     */
+    constructor(contains, add, addIdentity, addInvert) {
+        super(contains);
+        this.add = add;
+        this.addInvert = addInvert;
+        this.addIdentity = addIdentity;
+    }
+
+    subtract(a, b){
+        return this.add(a, this.addInvert(b));
+    }
+}
+
+class Ring extends Group {
+    /**
+     * Creates a Ring
+     * @param {function} contains - Membership function
+     * @param {function} add - Addition operation
+     * @param {*} addIdentity - Additive identity
+     * @param {function} addInvert - Additive inverse
+     * @param {function} multiply - Multiplication operation
+     * @param {*} multiplyIdentity - Multiplicative identity
+     */
+    constructor(contains, add, addIdentity, addInvert, multiply, multiplyIdentity) {
+        super(contains, add, addIdentity, addInvert);
+        this.multiply = multiply;
+        this.multiplyIdentity = multiplyIdentity;
+    }
+}
+
+class Field extends Ring {
+    /**
+     * Creates a Field
+     * @param {function} contains - Membership function
+     * @param {function} add - Addition operation
+     * @param {*} addIdentity - Additive identity (0)
+     * @param {function} addInvert - Additive inverse
+     * @param {function} multiply - Multiplication operation
+     * @param {*} multiplyIdentity - Multiplicative identity (1)
+     * @param {function} multiplyInvert - Multiplicative inverse (for non-zero)
+     */
+    constructor(contains, add, addIdentity, addInvert, multiply, multiplyIdentity, multiplyInvert) {
+        super(contains, add, addIdentity, addInvert, multiply, multiplyIdentity);
+        this.multiplyInvert = multiplyInvert;
+    }
+
+    divide(a, b){
+        return this.multiply(a, this.multiplyInvert(b));
+    }
+}
+
+// Linear algebra
+class VectorSpace extends Group{
+    /**
+     * Creates a Vector Space
+     * @param {Set} vectors - Set of vectors
+     * @param {Field} scalars - Field of scalars
+     * @param {function} add - Vector addition
+     * @param {function} scale - Scalar multiplication
+     */
+    constructor(vector_set, scalar_field, add, addIdentity, addInvert, scale) {
+        super(vector_set, add, addIdentity, addInvert);
+        this.scalar_field = scalar_field,
+        this.add = add;
+        this.scale = scale;
     }
 }
 
@@ -565,44 +601,6 @@ class GeneralLinearGroup extends Group {
         const invert = (a) => a.inverse();
 
         super(contains, multiply, identity, invert);
-    }
-}
-
-// Complex number implementation
-class Complex {
-    constructor(real, imag) {
-        this.real = real;
-        this.imag = imag;
-    }
-
-    add(other) {
-        return new Complex(
-            this.real + other.real,
-            this.imag + other.imag
-        );
-    }
-
-    multiply(other) {
-        return new Complex(
-            this.real * other.real - this.imag * other.imag,
-            this.real * other.imag + this.imag * other.real
-        );
-    }
-
-    negate() {
-        return new Complex(-this.real, -this.imag);
-    }
-
-    inverse() {
-        const denominator = this.real * this.real + this.imag * this.imag;
-        return new Complex(
-            this.real / denominator,
-            -this.imag / denominator
-        );
-    }
-
-    equals(other) {
-        return this.real === other.real && this.imag === other.imag;
     }
 }
 
