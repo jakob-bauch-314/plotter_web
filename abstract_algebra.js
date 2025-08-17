@@ -189,6 +189,52 @@ class Matrix {
         this.arr = createArray((i, j) => f(i, j), height, width);
     }
 
+    static swapRow(size, field, j1, j2) {
+        return new Matrix(
+            size, size, field, (i, j) => {
+                if (i === j1 && j === j1) return 0;
+                if (i === j2 && j === j2) return 0;
+                if (i === j1 && j === j2) return 1;
+                if (i === j2 && j === j1) return 1;
+                return i === j ? 1 : 0;
+        });
+    }
+
+    static Frobenius(size, field, j1, j2, scalar){
+        return new Matrix(
+            size, size, field, (i, j) => {
+                if (i === j) return 1;
+                if (i === j1 && j === j2) return scalar;
+                return 0;
+            }
+        )
+    }
+
+    toString() {
+        const colWidths = Array(this.height).fill(0);
+        
+        for (let i = 0; i < this.height; i++) {
+            for (let j = 0; j < this.width; j++) {
+                const val = this.arr[j][i].toString();
+                if (val.length > colWidths[i]) {
+                    colWidths[i] = val.length;
+                }
+            }
+        }
+        
+        const rows = [];
+        for (let i = 0; i < this.height; i++) {
+            const row = [];
+            for (let j = 0; j < this.width; j++) {
+                const val = this.arr[j][i].toString();
+                row.push(val.padStart(colWidths[i], ''));
+            }
+            rows.push(`[ ${row.join(' | ')} ]`);
+        }
+        
+        return `Matrix ${this.width}x${this.height}:\n${rows.join('\n')}`;
+    }
+
     getEntry(i, j) {
         if (i < 0 || i >= this.height || j < 0 || j >= this.width) {
             throw new Error(`Index (${i},${j}) out of bounds`);
@@ -229,6 +275,32 @@ class Matrix {
                 this.getEntry(i, j),
                 this.field.addInvert(other.getEntry(i, j))
             )
+        );
+    }
+
+    multiplyTuple(tuple) {
+        if (!(tuple instanceof Tuple)) {
+            throw new TypeError("Operand must be a Tuple");
+        }
+
+        if (this.width !== tuple.dimensions) {
+            throw new Error("Inner dimensions must match for matrix multiplication");
+        }
+
+        const field = this.field;
+        return new Tuple(
+            field,
+            ...Array.from({length: this.height}, (_, i) => {
+                let sum = field.addIdentity;
+                for (let j = 0; j < this.width; j++) {
+                    const product = field.multiply(
+                        this.getEntry(i, j),
+                        tuple.getEntry(j)
+                    );
+                    sum = field.add(sum, product);
+                }
+                return sum;
+            })
         );
     }
 
@@ -337,11 +409,42 @@ class Matrix {
         );
     }
 
-    /**
-     * LU Decomposition (without pivoting)
-     * @returns [L, U] lower and upper triangular matrices
-     */
-    decompose() {
+    inverseLowerTriangular() {
+        if (this.width !== this.height) {
+            throw new Error("Matrix must be square for inversion");
+        }
+        const n = this.width;
+        const zero = this.field.addIdentity;
+        
+        // Base case: 1x1 matrix
+        if (n === 1) {
+            const a = this.getEntry(0, 0);
+            if (a === zero) throw new Error("Singular matrix");
+            return new Matrix(1, 1, this.field, () => this.field.multiplyInvert(a));
+        }
+
+        const [a, v, w, A] = this.partition();
+        if (a === zero) throw new Error("Singular matrix");
+        const A_inv = A.inverseLowerTriangular();
+        
+        // Compute c = -A⁻¹v/a
+        const c = A_inv.multiplyTuple(v)
+                .scale(this.field.multiplyInvert(-a));
+        
+        // Corrected assembly order
+        return Matrix.assemble(
+            this.field.multiplyInvert(a),  // top-left
+            c,                             // left column
+            Tuple.ZERO(this.field, n-1),   // top row
+            A_inv                          // bottom-right
+        );
+    }
+
+    inverseUpperTriangular() {
+        return ((this.transpose()).inverseLowerTriangular()).transpose();
+    }
+
+    LUP() {
         if (this.width !== this.height) {
             throw new Error("Matrix must be square for LU decomposition");
         }
@@ -351,40 +454,71 @@ class Matrix {
         if (n === 1) {
             const L = Matrix.IDENTITY(1, this.field);
             const U = new Matrix(1, 1, this.field, () => this.getEntry(0, 0));
-            return [L, U];
+            const P = Matrix.IDENTITY(1, this.field)
+            const swaps = 0;
+            return [L, U, P, swaps];
         }
 
-        const [a, v, w, A] = this.partition();
         const zero = this.field.addIdentity;
-        
-        // Check for zero pivot
-        if (a === zero) {
-            throw new Error("Zero pivot encountered in LU decomposition");
-        }
+
+        // find first non-zero row
+        var j=0; for (; j < this.height; j++){if (this.getEntry(0, j) === zero) continue; break;}
+        const P0 = (j == 0)? Matrix.IDENTITY(n, this.field) : Matrix.swapRow(n, this.field, 0, j);
+        const swaps0 = (j == 0)? 0 : 1;
+
+        const [a, v, w, A] = (P0.multiply(this)).partition();
 
         // Compute Schur complement: S = A - (v * w^T)/a
         const scaleFactor = this.field.multiplyInvert(a);
         const schur = A.subtract(v.outerProduct(w).scale(scaleFactor));
+        const zero_tuple = Tuple.ZERO(this.field, n - 1);
         
         // Recursive decomposition
-        const [L1, U1] = schur.decompose();
+        const [L1, U1, P1, swaps1] = schur.LUP();
         
-        // Construct L and U
+        // Construct L, U and P
         const L = Matrix.assemble(
             this.field.multiplyIdentity,  // 1
             v.scale(scaleFactor),         // v/a
-            Tuple.ZERO(this.field, n - 1),
+            zero_tuple,
             L1
         );
         
         const U = Matrix.assemble(
             a,
-            Tuple.ZERO(this.field, n - 1),
+            zero_tuple,
             w,
             U1
         );
+
+        const P = Matrix.assemble(
+            1,
+            zero_tuple,
+            zero_tuple,
+            P1
+        ).multiply(P0);
+
+        const swaps = swaps0 + swaps1
         
-        return [L, U];
+        return [L, U, P, swaps];
+    }
+
+    get determinant() {
+        if (this.width !== this.height) {
+            throw new Error("Matrix must be square for LU decomposition");
+        }
+        const n = this.width;
+        const [L, U, P, swaps] = this.LUP();
+        const sign = ((swaps % 2) == 0)? 1 : -1;
+        const diagonal = Array.from({length: n}, (_, i) => U.getEntry(i, i));
+        return sign * diagonal.reduce((prod, e) => this.field.multiply(prod, e), this.field.multiplyIdentity);
+    }
+
+    inverse() {
+        const [L, U, P] = this.LUP();
+        const L_inv = L.inverseLowerTriangular();
+        const U_inv = U.inverseUpperTriangular();
+        return U_inv.multiply(L_inv).multiply(P);
     }
 
     static ZERO(width, height, field) {
@@ -494,11 +628,9 @@ const complex = new Field(
 );
 
 // Example usage
-const A = new Matrix(3, 3, reals, (i, j) => [[1, 2, 3], [4, 5, 6], [7, 8, 9]][i][j]);
-try {
-    const [L, U] = A.decompose();
-    console.log(L);
-    console.log(U);
-} catch (error) {
-    console.error("Decomposition error:", error.message);
-}
+const A = new Matrix(10, 10, reals, (i, j) => Math.random() * 10 + 1);
+const A_inv = A.inverse();
+
+console.log(A.toString());
+console.log(A_inv);
+console.log(A.multiply(A_inv).determinant);
